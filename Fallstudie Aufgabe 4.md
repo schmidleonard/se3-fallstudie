@@ -49,7 +49,6 @@
 
 ### a. Architekturübersichtsdiagramm
 
-*(Hier: Visualisierung der kombinierten Architektur – siehe separates Diagramm)*
 
 ---
 
@@ -84,4 +83,5 @@
 * **Verworfen, weil:**
     * **"Cascading Failures":** Fällt ein System (z.B. SAP) aus, schlägt die *gesamte* Kette fehl.
     * **Schlechte Performance:** Nutzer im Portal müsste warten, bis *alle* Systeme (inkl. DWH) geantwortet haben.
+
     * **Passt nicht:** Ignoriert die asynchrone Natur des fachlichen Prozesses.
