@@ -1,0 +1,60 @@
+@startuml
+skinparam componentStyle uml2
+    component "Portal / Vertriebssystem" as Portal
+package "Neue Architektur (EDA / Microservices)" {
+
+    component "Saga Sevice" as Saga
+    component "Antrags-Service" as Antrag
+    
+    package "Kalkulations-Service (Facade)" as KalkService {
+        component "Prod-Adapter" as AdapterProd #LightBlue
+    }
+
+    package "Bestands-Service (Facade)" as BestandService {
+        component "Bestands-Adapter" as AdapterBest #LightBlue
+    }
+    
+    queue "Event Bus" as Bus
+    
+    ' NEU: Adapter für Downstream-Systeme
+    package "Integration Layer" {
+        component "SAP Adapter\n(Event Listener)" as SapAdapter #LightBlue
+        component "DWH Adapter\n(Batch Aggregator)" as DwhAdapter #LightBlue
+    }
+}
+
+package "Legacy & Externe Systeme" {
+    component "Produktsystem (Alt)" as LegProd #LightGray
+    component "Bestandssystem (Alt)" as LegBest #LightGray
+    component "SAP (Abrechnung)" as SAP #LightGray
+    component "Data Warehouse" as DWH #LightGray
+}
+
+' Standard Flows
+Portal --> Antrag : REST
+Antrag --> Saga
+Saga --> KalkService : Command
+Saga --> BestandService : Command
+
+' Legacy Facades
+AdapterProd --> LegProd
+AdapterBest --> LegBest
+
+' Events Flow (Geändert)
+BestandService --> Bus : Publishes 'VertragGeändert'
+
+' SAP Anbindung
+Bus --> SapAdapter : Subscribes
+SapAdapter --> SAP : RFC / IDoc Call
+
+' DWH Anbindung
+Bus --> DwhAdapter : Subscribes
+DwhAdapter --> DWH : Täglicher Batch-Export (CSV/Staging)
+
+note bottom of DwhAdapter
+  Sammelt Events in Staging-Area.
+  Übergabe an DWH erfolgt zeitgesteuert
+  (nicht Echtzeit).
+end note
+
+@enduml
