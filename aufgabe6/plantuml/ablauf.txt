@@ -1,0 +1,61 @@
+@startuml
+autonumber
+
+actor "Kunde / Vertrieb" as User
+participant "Portal" as Portal
+participant "Saga Orchestrator" as Saga
+participant "Bestands-Service" as Bestand
+participant "Bestands-Adapter" as AdaptBest
+participant "Bestandssystem (Alt)" as LegBest
+queue "Event Bus" as Bus
+participant "SAP Adapter" as SapAdapt
+participant "SAP System" as SAP
+participant "DWH Adapter\n(Batch Aggregator)" as DwhAdapt
+participant "Data Warehouse" as DWH
+
+' --- Verkürzter Start ---
+User -> Portal: Angebot annehmen
+Portal -> Saga: Confirm Offer
+Saga -> Bestand: Command: Aktualisiere
+
+' --- Bestands-Update (Legacy) ---
+Bestand -> AdaptBest: Update Contract
+AdaptBest -> LegBest: Native Update
+LegBest --> AdaptBest: OK
+AdaptBest --> Bestand: OK
+
+' --- Event Publishing ---
+Bestand -> Bus: Event: 'VertragGeändert'
+activate Bus
+
+' --- NEU: Verarbeitung durch Adapter ---
+
+' 1. SAP (Verarbeitet event-basiert, aber via Adapter)
+Bus -->> SapAdapt: Push Event
+activate SapAdapt
+SapAdapt -> SapAdapt: Map to IDoc
+SapAdapt -> SAP: Send IDoc (Sync/Async)
+SAP --> SapAdapt: Ack
+SapAdapt -->> Bus: Ack (Commit Offset)
+deactivate SapAdapt
+
+' 2. DWH (Sammelt für Batch)
+Bus -->> DwhAdapt: Push Event
+activate DwhAdapt
+DwhAdapt -> DwhAdapt: Persist to Staging (e.g. S3/DB)
+DwhAdapt -->> Bus: Ack (Commit Offset)
+deactivate DwhAdapt
+
+deactivate Bus
+
+Bestand --> Saga: Erfolg
+Saga --> Portal: Fertig
+
+' --- Späterer Zeitpunkt (Batch) ---
+... Zeitversetzt (z.B. Nachts) ...
+DwhAdapt -> DWH: Bulk Load / Batch Import
+activate DWH
+DWH --> DwhAdapt: Import Status
+deactivate DWH
+
+@enduml
