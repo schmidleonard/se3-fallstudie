@@ -1,13 +1,13 @@
 # ADR-001: Einführung des Saga-Orchestrator-Patterns für Vertragsänderungen
 
 **Status:** Akzeptiert  
-**Datum:** 19.11.2025  
+**Datum:** 18.11.2025  
 **Autor(en):** Software Architekt Team
 
 ## Kontext
 Der Geschäftsprozess zur Erhöhung der Deckungssumme erfordert Interaktionen über mehrere verteilte Systeme: Das Portal (Frontend), neue Microservices und monolithische Legacy-Systeme (Produkt- und Bestandssystem).
 
-[cite_start]Die Transaktion darf fachlich nur erfolgreich sein, wenn alle Schritte (Kalkulation, Bestätigung durch Kunden, Bestandsführung) konsistent abgeschlossen sind [cite: 4-6]. Da die beteiligten Legacy-Systeme keine modernen verteilten Transaktionen (wie 2PC/XA) über REST oder Events unterstützen und über Adapter angebunden werden müssen, ist eine atomare Datenbank-Transaktion über alle Systeme hinweg technisch unmöglich. [cite_start]Zudem erfordert der Prozess eine Nutzerinteraktion (Angebot annehmen) [cite: 15-16], was den Vorgang zu einer "langlebigen Transaktion" macht.
+Die Transaktion darf fachlich nur erfolgreich sein, wenn alle Schritte (Kalkulation, Bestätigung durch Kunden, Bestandsführung) konsistent abgeschlossen sind. Da die beteiligten Legacy-Systeme keine modernen verteilten Transaktionen (wie 2PC/XA) über REST oder Events unterstützen und über Adapter angebunden werden müssen, ist eine atomare Datenbank-Transaktion über alle Systeme hinweg technisch unmöglich. Zudem erfordert der Prozess eine Nutzerinteraktion (Angebot annehmen), was den Vorgang zu einer "langlebigen Transaktion" macht.
 
 ## Entscheidung
 Wir entscheiden uns für die Implementierung des **Saga-Patterns mit zentraler Orchestrierung**.
