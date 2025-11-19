@@ -1,0 +1,41 @@
+@startuml
+skinparam componentStyle uml2
+
+package "Bestands-Service (Strangler Facade)" {
+    
+    port "REST / Command API" as InPort
+    port "Event Publisher" as OutPort
+    
+    component "Command Handler" as Handler
+    component "Domain Logic" as Domain {
+        note right
+          Prüft Status,
+          Sperren & Logik
+        end note
+    }
+    
+    package "Anti-Corruption Layer (ACL)" {
+        interface "ILegacyClient" as IClient
+        component "Legacy Adapter" as Adapter #LightBlue {
+            note bottom
+                Mapping: Domain Model <-> Legacy XML
+                Circuit Breaker & Retry Logic
+            end note
+        }
+    }
+}
+
+component "Bestandssystem (Alt)" as LegacySystem #LightGray
+
+' Interne Flüsse
+InPort --> Handler : "Command: Aktualisiere"
+Handler --> Domain : "Validiere & Execute"
+Domain --> IClient : "Update anfordern"
+IClient -- Adapter
+Adapter --> LegacySystem : "SOAP Call"
+LegacySystem --> Adapter : "Response (OK/Error)"
+
+Adapter --> Domain : "Resultat mappen"
+Domain --> OutPort : "Bei Erfolg: Event 'VertragGeändert'"
+
+@enduml
